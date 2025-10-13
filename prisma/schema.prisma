@@ -1,0 +1,289 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// Modèle Utilisateur de base
+model User {
+  id              String    @id @default(cuid())
+  numeroTelephone String    @unique
+  nom             String
+  prenom          String
+  email           String    @unique
+  motDePasse      String
+  role            UserRole  @default(USER)
+  photoProfil     String?
+  dateInscription DateTime  @default(now())
+  isActive        Boolean   @default(true)
+  isVerified      Boolean   @default(false)
+  
+  // Relations
+  mentor          Mentor?
+  mentee          Mentee?
+  evaluations     Evaluation[]
+  notifications   Notification[]
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("users")
+}
+
+// Modèle Mentor
+model Mentor {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  domaineExpertise  String
+  anneesExperience  Int
+  biographie        String?
+  noteMoyenne       Float    @default(0)
+  tarifParSession   Float
+  disponibilites    Json     // Stockage des disponibilités en JSON
+  isDisponible      Boolean  @default(true)
+  
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions          SessionMentorat[] @relation("MentorSessions")
+  matchings         Matching[] @relation("MentorMatchings")
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("mentors")
+}
+
+// Modèle Mentee
+model Mentee {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  objectifs           String[]
+  competencesActuelles Json?   // Stockage des compétences actuelles
+  competencesCible    Json?    // Stockage des compétences cibles
+  progression         Float    @default(0) // Pourcentage de progression (0-100)
+  
+  // Relations
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions            SessionMentorat[] @relation("MenteeSessions")
+  paiements           Paiement[]
+  credits             Credit[]
+  matchings           Matching[] @relation("MenteeMatchings")
+  
+  // Timestamps
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("mentees")
+}
+
+// Modèle Session de Mentorat
+model SessionMentorat {
+  id            String           @id @default(cuid())
+  mentorId      String
+  menteeId      String
+  dateHeure     DateTime
+  duree         Int              // Durée en minutes
+  statut        SessionStatut    @default(PLANIFIEE)
+  typeSession   TypeSession      @default(VIDEO)
+  lienSession   String?
+  compteRendu  String?
+  notes         String?
+  
+  // Relations
+  mentor        Mentor           @relation("MentorSessions", fields: [mentorId], references: [id])
+  mentee        Mentee           @relation("MenteeSessions", fields: [menteeId], references: [id])
+  evaluations   Evaluation[]
+  
+  // Timestamps
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@map("sessions_mentorat")
+}
+
+// Modèle Évaluation
+model Evaluation {
+  id          String   @id @default(cuid())
+  sessionId   String
+  userId      String
+  note        Int      // Note de 1 à 5
+  commentaire String?
+  
+  // Relations
+  session     SessionMentorat @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id])
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("evaluations")
+}
+
+// Modèle Paiement
+model Paiement {
+  id            String           @id @default(cuid())
+  menteeId      String
+  montant       Float
+  moyenPaiement MoyenPaiement
+  datePaiement  DateTime         @default(now())
+  statut        StatutPaiement   @default(EN_ATTENTE)
+  reference     String?          // Référence de transaction
+  description  String?
+  
+  // Relations
+  mentee        Mentee           @relation(fields: [menteeId], references: [id])
+  
+  // Timestamps
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@map("paiements")
+}
+
+// Modèle Crédit
+model Credit {
+  id                  String   @id @default(cuid())
+  menteeId            String   @unique
+  solde               Float    @default(0)
+  dateDerniereRecharge DateTime @default(now())
+  
+  // Relations
+  mentee              Mentee   @relation(fields: [menteeId], references: [id])
+  
+  // Timestamps
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("credits")
+}
+
+// Modèle Matching
+model Matching {
+  id                  String   @id @default(cuid())
+  menteeId            String
+  mentorId            String
+  scoreCompatibilite  Float    // Score de 0 à 100
+  statut              StatutMatching @default(EN_ATTENTE)
+  dateMatching        DateTime @default(now())
+  
+  // Relations
+  mentee              Mentee   @relation("MenteeMatchings", fields: [menteeId], references: [id])
+  mentor              Mentor   @relation("MentorMatchings", fields: [mentorId], references: [id])
+  
+  // Timestamps
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("matchings")
+}
+
+// Modèle Compétence
+model Competence {
+  id          String   @id @default(cuid())
+  nom         String   @unique
+  description String?
+  niveau      NiveauCompetence
+  categorie   String?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("competences")
+}
+
+// Modèle Notification
+model Notification {
+  id           String           @id @default(cuid())
+  utilisateurId String
+  message      String
+  type         TypeNotification
+  dateEnvoi    DateTime         @default(now())
+  statut       StatutNotification @default(NON_LU)
+  lien         String?
+  
+  // Relations
+  utilisateur  User             @relation(fields: [utilisateurId], references: [id])
+  
+  // Timestamps
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@map("notifications")
+}
+
+// Énumérations
+enum UserRole {
+  USER
+  MENTOR
+  MENTEE
+  ADMIN
+}
+
+enum SessionStatut {
+  PLANIFIEE
+  EN_COURS
+  TERMINEE
+  ANNULEE
+  REPORTEE
+}
+
+enum TypeSession {
+  VIDEO
+  AUDIO
+  CHAT
+  PRESENTIEL
+}
+
+enum MoyenPaiement {
+  ORANGE_MONEY
+  MOOV_MONEY
+  MTN_MOBILE_MONEY
+  CARTE_BANCAIRE
+  VIREMENT
+}
+
+enum StatutPaiement {
+  EN_ATTENTE
+  VALIDE
+  ECHEC
+  REMBOURSE
+}
+
+enum StatutMatching {
+  EN_ATTENTE
+  ACCEPTE
+  REFUSE
+  EXPIRED
+}
+
+enum NiveauCompetence {
+  DEBUTANT
+  INTERMEDIAIRE
+  AVANCE
+  EXPERT
+}
+
+enum TypeNotification {
+  SESSION
+  MATCHING
+  PAIEMENT
+  SYSTEME
+  REMINDER
+}
+
+enum StatutNotification {
+  NON_LU
+  LU
+  ARCHIVE
+} 
