@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code de connexion - {{platformName}}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .login-text {
+            font-size: 18px;
+            color: #2d3748;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .otp-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+        .otp-code {
+            display: inline-block;
+            font-size: 36px;
+            font-weight: bold;
+            color: #4facfe;
+            background-color: #f0fcff;
+            border: 2px dashed #4facfe;
+            padding: 20px 30px;
+            border-radius: 12px;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        .expiry-info {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 25px 0;
+            text-align: center;
+            color: #856404;
+        }
+        .login-info {
+            background-color: #e8f5e8;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+            border-top: 1px solid #e9ecef;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .otp-code {
+                font-size: 28px;
+                padding: 15px 20px;
+                letter-spacing: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{platformName}}</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Connexion sécurisée</p>
+        </div>
+        
+        <div class="content">
+            <div class="login-text">
+                <strong>🔐 Connexion sécurisée demandée</strong><br>
+                Saisissez le code ci-dessous pour vous connecter à votre compte.
+            </div>
+            
+            <div class="otp-container">
+                <p style="margin-bottom: 20px; color: #4a5568;">Votre code de connexion :</p>
+                <div class="otp-code">{{otpCode}}</div>
+            </div>
+            
+            <div class="expiry-info">
+                ⏰ <strong>Ce code expire dans {{expiryMinutes}} minutes</strong>
+            </div>
+            
+            <div class="login-info">
+                <h4 style="margin: 0 0 10px 0; color: #2e7d32;">✅ Informations de connexion</h4>
+                <ul style="margin: 0; padding-left: 20px; color: #424242;">
+                    <li>Demande de connexion pour : <strong>{{email}}</strong></li>
+                    <li>Ce code n'est valable que pour une seule utilisation</li>
+                    <li>Assurez-vous d'être sur le bon site web</li>
+                    <li>Si ce n'est pas vous, changez votre mot de passe</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <p style="color: #6c757d;">
+                    Questions ou problème de connexion ?<br>
+                    <a href="mailto:{{supportEmail}}" style="color: #4facfe;">{{supportEmail}}</a>
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 {{platformName}} - Tous droits réservés</p>
+            <p>Connexion sécurisée garantie</p>
+        </div>
+    </div>
+</body>
+</html>
