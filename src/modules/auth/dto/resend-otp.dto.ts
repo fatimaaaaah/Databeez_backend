@@ -18,7 +18,7 @@ export class ResendOtpDto {
   })
   @IsEnum(OtpType, {
     message:
-      'Le type doit être EMAIL_VERIFICATION, PASSWORD_RESET ou LOGIN_VERIFICATION',
+      'Le type doit être EMAIL_VERIFICATION ou LOGIN_VERIFICATION',
   })
   type: OtpType;
 }

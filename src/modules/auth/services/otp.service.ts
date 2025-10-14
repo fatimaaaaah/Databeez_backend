@@ -234,12 +234,10 @@ export class OtpService {
     await this.prisma.otpCode.deleteMany({ where });
   }
 
-  private getEmailType(otpType: OtpType): 'verification' | 'reset' | 'login' {
+  private getEmailType(otpType: OtpType): 'verification' | 'login' {
     switch (otpType) {
       case OtpType.EMAIL_VERIFICATION:
         return 'verification';
-      case OtpType.PASSWORD_RESET:
-        return 'reset';
       case OtpType.LOGIN_VERIFICATION:
         return 'login';
       default:

@@ -307,6 +307,5 @@ model OtpCode {
 
 enum OtpType {
   EMAIL_VERIFICATION
-  PASSWORD_RESET
   LOGIN_VERIFICATION
 } 
