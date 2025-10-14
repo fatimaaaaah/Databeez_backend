@@ -21,7 +21,6 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { ValidateTokenDto } from './dto/validate-token.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
-import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RegisterWithOtpDto } from './dto/register-with-otp.dto';
 import { LoginWithOtpDto } from './dto/login-with-otp.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
@@ -194,42 +193,6 @@ export class AuthController {
     return ApiResponseDto.success(result, 'Code OTP traité');
   }
 
-  @Post('verify-otp')
-  @Public()
-  @ApiOperation({ summary: 'Vérifier un code OTP' })
-  @ApiBody({ type: VerifyOtpDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Code OTP vérifié avec succès',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            otpId: { type: 'string' },
-          },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Code OTP invalide ou expiré',
-  })
-  async verifyOtp(
-    @Body() verifyOtpDto: VerifyOtpDto,
-  ): Promise<ApiResponseDto<{ success: boolean; otpId?: string }>> {
-    const result = await this.authService.verifyOtp(
-      verifyOtpDto.email,
-      verifyOtpDto.code,
-      verifyOtpDto.type,
-    );
-    return ApiResponseDto.success(result, 'Code OTP vérifié avec succès');
-  }
 
   @Post('resend-otp')
   @Public()

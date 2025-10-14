@@ -238,13 +238,6 @@ export class AuthService {
     return await this.otpService.generateAndSendOtp(email, type);
   }
 
-  async verifyOtp(
-    email: string,
-    code: string,
-    type: OtpType,
-  ): Promise<{ success: boolean; otpId?: string }> {
-    return await this.otpService.verifyOtp(email, code, type);
-  }
 
   async resendOtp(
     email: string,
