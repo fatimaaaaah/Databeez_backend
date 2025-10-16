@@ -41,19 +41,17 @@ model User {
 // Modèle Mentor
 model Mentor {
   id                String   @id @default(cuid())
-  userId            String   @unique
-  domaineExpertise  String
+  utilisateurId     String   @unique
+  numeroTelephone   String   
+  nom               String
+  prenom            String
+  photoProfil       String
   anneesExperience  Int
-  biographie        String?
-  noteMoyenne       Float    @default(0)
-  tarifParSession   Float
-  disponibilites    Json     // Stockage des disponibilités en JSON
-  isDisponible      Boolean  @default(true)
+  biographie        String
   
   // Relations
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
   sessions          SessionMentorat[] @relation("MentorSessions")
-  matchings         Matching[] @relation("MentorMatchings")
   
   // Timestamps
   createdAt         DateTime @default(now())
@@ -62,21 +60,22 @@ model Mentor {
   @@map("mentors")
 }
 
-// Modèle Mentee
+// Modèle Mentee  
 model Mentee {
   id                  String   @id @default(cuid())
-  userId              String   @unique
-  objectifs           String[]
-  competencesActuelles Json?   // Stockage des compétences actuelles
-  competencesCible    Json?    // Stockage des compétences cibles
-  progression         Float    @default(0) // Pourcentage de progression (0-100)
+  utilisateurId       String   @unique
+  nom                 String
+  prenom              String
+  type                String
+  biographie          String
+  numeroTelephone     String
+  photoProfil         String
   
   // Relations
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User     @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
   sessions            SessionMentorat[] @relation("MenteeSessions")
   paiements           Paiement[]
-  credits             Credit[]
-  matchings           Matching[] @relation("MenteeMatchings")
+  mentorats           Mentorat[]
   
   // Timestamps
   createdAt           DateTime @default(now())
@@ -150,56 +149,80 @@ model Paiement {
   @@map("paiements")
 }
 
-// Modèle Crédit
-model Credit {
-  id                  String   @id @default(cuid())
-  menteeId            String   @unique
-  solde               Float    @default(0)
-  dateDerniereRecharge DateTime @default(now())
+
+// Modèle Domaine d'Expertise
+model DomaineExpertise {
+  id          String   @id @default(cuid())
+  nom         String   @unique
+  description String
+  actif       Boolean  @default(true)
   
   // Relations
-  mentee              Mentee   @relation(fields: [menteeId], references: [id])
+  profils     Profil[]
   
   // Timestamps
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@map("credits")
+  @@map("domaines_expertise")
 }
 
-// Modèle Matching
-model Matching {
-  id                  String   @id @default(cuid())
-  menteeId            String
-  mentorId            String
-  scoreCompatibilite  Float    // Score de 0 à 100
-  statut              StatutMatching @default(EN_ATTENTE)
-  dateMatching        DateTime @default(now())
+// Modèle Profil
+model Profil {
+  id                   String           @id @default(cuid())
+  nom                  String
+  description          String
+  domaineExpertiseId   String
   
   // Relations
-  mentee              Mentee   @relation("MenteeMatchings", fields: [menteeId], references: [id])
-  mentor              Mentor   @relation("MentorMatchings", fields: [mentorId], references: [id])
+  domaineExpertise     DomaineExpertise @relation(fields: [domaineExpertiseId], references: [id])
+  competences          Competence[]
+  mentorats            Mentorat[]
   
   // Timestamps
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
-  @@map("matchings")
+  @@map("profils")
 }
 
 // Modèle Compétence
 model Competence {
   id          String   @id @default(cuid())
   nom         String   @unique
-  description String?
-  niveau      NiveauCompetence
-  categorie   String?
+  description String
+  profilId    String?
+  
+  // Relations
+  profil      Profil?  @relation(fields: [profilId], references: [id])
   
   // Timestamps
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("competences")
+}
+
+// Modèle Mentorat
+model Mentorat {
+  id           String   @id @default(cuid())
+  menteeId     String
+  profilId     String
+  objectif     String
+  dateDebut    DateTime
+  dateFin      DateTime?
+  customData   String?  // LongText selon le diagramme
+  statut       String   @default("EN_COURS")
+  
+  // Relations
+  mentee       Mentee   @relation(fields: [menteeId], references: [id], onDelete: Cascade)
+  profil       Profil   @relation(fields: [profilId], references: [id])
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("mentorats")
 }
 
 // Modèle Notification
@@ -260,12 +283,6 @@ enum StatutPaiement {
   REMBOURSE
 }
 
-enum StatutMatching {
-  EN_ATTENTE
-  ACCEPTE
-  REFUSE
-  EXPIRED
-}
 
 enum NiveauCompetence {
   DEBUTANT
