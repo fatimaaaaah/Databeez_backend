@@ -303,4 +303,26 @@ enum StatutNotification {
   NON_LU
   LU
   ARCHIVE
+}
+
+// Modèle OTP pour l'authentification par email
+model OtpCode {
+  id          String    @id @default(cuid())
+  email       String
+  code        String
+  type        OtpType   @default(EMAIL_VERIFICATION)
+  expiresAt   DateTime
+  isUsed      Boolean   @default(false)
+  attempts    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([email, type])
+  @@index([code])
+  @@map("otp_codes")
+}
+
+enum OtpType {
+  EMAIL_VERIFICATION
+  LOGIN_VERIFICATION
 } 

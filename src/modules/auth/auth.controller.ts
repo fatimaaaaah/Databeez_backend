@@ -20,6 +20,10 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { ValidateTokenDto } from './dto/validate-token.dto';
+import { SendOtpDto } from './dto/send-otp.dto';
+import { RegisterWithOtpDto } from './dto/register-with-otp.dto';
+import { LoginWithOtpDto } from './dto/login-with-otp.dto';
+import { ResendOtpDto } from './dto/resend-otp.dto';
 
 import { ApiResponseDto } from '../../common/dto/api-response.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -33,7 +37,7 @@ export class AuthController {
 
   @Post('register')
   @Public()
-  @ApiOperation({ summary: 'Inscription d\'un nouvel utilisateur' })
+  @ApiOperation({ summary: "Inscription d'un nouvel utilisateur" })
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({
     status: 201,
@@ -48,7 +52,9 @@ export class AuthController {
     status: 409,
     description: 'Utilisateur déjà existant',
   })
-  async register(@Body() createUserDto: CreateUserDto): Promise<ApiResponseDto<AuthResponseDto>> {
+  async register(
+    @Body() createUserDto: CreateUserDto,
+  ): Promise<ApiResponseDto<AuthResponseDto>> {
     const result = await this.authService.register(createUserDto);
     return ApiResponseDto.success(result, 'Inscription réussie');
   }
@@ -67,14 +73,17 @@ export class AuthController {
     status: 401,
     description: 'Identifiants invalides',
   })
-  async login(@Request() req, @Body() loginDto: LoginDto): Promise<ApiResponseDto<AuthResponseDto>> {
+  async login(
+    @Request() req,
+    @Body() loginDto: LoginDto,
+  ): Promise<ApiResponseDto<AuthResponseDto>> {
     const result = await this.authService.login(loginDto);
     return ApiResponseDto.success(result, 'Connexion réussie');
   }
 
   @Post('refresh')
   @Public()
-  @ApiOperation({ summary: 'Rafraîchir le token d\'accès' })
+  @ApiOperation({ summary: "Rafraîchir le token d'accès" })
   @ApiBody({ type: RefreshTokenDto })
   @ApiResponse({
     status: 200,
@@ -85,7 +94,9 @@ export class AuthController {
     status: 401,
     description: 'Token de rafraîchissement invalide',
   })
-  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<ApiResponseDto<AuthResponseDto>> {
+  async refreshToken(
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ): Promise<ApiResponseDto<AuthResponseDto>> {
     const result = await this.authService.refreshToken(refreshTokenDto);
     return ApiResponseDto.success(result, 'Token rafraîchi avec succès');
   }
@@ -112,7 +123,6 @@ export class AuthController {
   @Public()
   @ApiOperation({ summary: 'Valider un token JWT' })
   @ApiBody({ type: ValidateTokenDto })
-
   @ApiResponse({
     status: 200,
     description: 'Token valide',
@@ -125,18 +135,132 @@ export class AuthController {
           type: 'object',
           properties: {
             valid: { type: 'boolean' },
-            user: { type: 'object' }
-          }
-        }
-      }
-    }
+            user: { type: 'object' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
     description: 'Token manquant',
   })
-  async validateToken(@Body() validateTokenDto: ValidateTokenDto): Promise<ApiResponseDto<{ valid: boolean; user?: any }>> {
+  async validateToken(
+    @Body() validateTokenDto: ValidateTokenDto,
+  ): Promise<ApiResponseDto<{ valid: boolean; user?: any }>> {
     const result = await this.authService.validateToken(validateTokenDto.token);
-    return ApiResponseDto.success(result, result.valid ? 'Token valide' : 'Token invalide');
+    return ApiResponseDto.success(
+      result,
+      result.valid ? 'Token valide' : 'Token invalide',
+    );
   }
-} 
+
+  // ==================== ENDPOINTS OTP ====================
+
+  @Post('send-otp')
+  @Public()
+  @ApiOperation({ summary: 'Envoyer un code OTP par email' })
+  @ApiBody({ type: SendOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Code OTP envoyé avec succès',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        data: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Données invalides ou trop de tentatives',
+  })
+  async sendOtp(
+    @Body() sendOtpDto: SendOtpDto,
+  ): Promise<ApiResponseDto<{ success: boolean; message: string }>> {
+    const result = await this.authService.sendOtp(
+      sendOtpDto.email,
+      sendOtpDto.type,
+    );
+    return ApiResponseDto.success(result, 'Code OTP traité');
+  }
+
+
+  @Post('resend-otp')
+  @Public()
+  @ApiOperation({ summary: 'Renvoyer un code OTP existant' })
+  @ApiBody({ type: ResendOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Code OTP renvoyé avec succès',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Aucun code récent trouvé ou trop de tentatives',
+  })
+  async resendOtp(
+    @Body() resendOtpDto: ResendOtpDto,
+  ): Promise<ApiResponseDto<{ success: boolean; message: string }>> {
+    const result = await this.authService.resendOtp(
+      resendOtpDto.email,
+      resendOtpDto.type,
+    );
+    return ApiResponseDto.success(result, 'Code OTP traité');
+  }
+
+  @Post('register-with-otp')
+  @Public()
+  @ApiOperation({ summary: 'Inscription avec vérification OTP' })
+  @ApiBody({ type: RegisterWithOtpDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Inscription avec OTP réussie',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Données invalides',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Code OTP invalide',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Utilisateur déjà existant',
+  })
+  async registerWithOtp(
+    @Body() registerWithOtpDto: RegisterWithOtpDto,
+  ): Promise<ApiResponseDto<AuthResponseDto>> {
+    const result = await this.authService.registerWithOtp(registerWithOtpDto);
+    return ApiResponseDto.success(result, 'Inscription avec OTP réussie');
+  }
+
+  @Post('login-with-otp')
+  @Public()
+  @ApiOperation({ summary: 'Connexion avec code OTP' })
+  @ApiBody({ type: LoginWithOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Connexion avec OTP réussie',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Code OTP invalide ou utilisateur introuvable',
+  })
+  async loginWithOtp(
+    @Body() loginWithOtpDto: LoginWithOtpDto,
+  ): Promise<ApiResponseDto<AuthResponseDto>> {
+    const result = await this.authService.loginWithOtp(loginWithOtpDto);
+    return ApiResponseDto.success(result, 'Connexion avec OTP réussie');
+  }
+}

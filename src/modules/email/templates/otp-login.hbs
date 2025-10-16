@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code de connexion - DataBeez</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+            color: #1f2937;
+            margin: 0;
+            padding: 40px 20px;
+            background-color: #f9fafb;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            padding: 32px 32px 0;
+            text-align: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #E49B0F;
+            margin-bottom: 8px;
+        }
+        .content {
+            padding: 24px 32px 32px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 8px 0;
+            text-align: center;
+        }
+        .subtitle {
+            color: #6b7280;
+            text-align: center;
+            margin: 0 0 24px 0;
+            font-size: 16px;
+        }
+        .user-info {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            margin: 0 0 24px 0;
+        }
+        .user-label {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 0 0 4px 0;
+        }
+        .user-email {
+            color: #111827;
+            font-weight: 600;
+            margin: 0;
+        }
+        .code-container {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            margin: 0 0 24px 0;
+        }
+        .code {
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-size: 32px;
+            font-weight: 600;
+            color: #E49B0F;
+            letter-spacing: 4px;
+            margin: 0;
+        }
+        .expiry {
+            color: #6b7280;
+            font-size: 14px;
+            text-align: center;
+            margin: 0 0 24px 0;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 24px 32px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        .footer-text {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 0;
+        }
+        .support-link {
+            color: #E49B0F;
+            text-decoration: none;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 16px;
+            }
+            .header, .content, .footer {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+            .code {
+                font-size: 28px;
+                letter-spacing: 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">DataBeez</div>
+        </div>
+        
+        <div class="content">
+            <h1 class="title">Code de connexion</h1>
+            <p class="subtitle">Saisissez ce code pour vous connecter</p>
+            
+            <div class="user-info">
+                <p class="user-label">Connexion demandée pour</p>
+                <p class="user-email">{{email}}</p>
+            </div>
+            
+            <div class="code-container">
+                <div class="code">{{otpCode}}</div>
+            </div>
+            
+            <p class="expiry">Ce code expire dans {{expiryMinutes}} minutes</p>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-text">
+                Problème ? <a href="mailto:{{supportEmail}}" class="support-link">Contactez le support</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

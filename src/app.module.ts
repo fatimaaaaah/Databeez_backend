@@ -23,7 +23,7 @@ import { AppService } from './app.service';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    
+
     // Protection contre les attaques par déni de service
     ThrottlerModule.forRoot([
       {
@@ -31,17 +31,17 @@ import { AppService } from './app.service';
         limit: 100, // 100 requêtes par minute
       },
     ]),
-    
+
     // Gestion des événements
     EventEmitterModule.forRoot(),
-    
+
     // Planification des tâches
     ScheduleModule.forRoot(),
-    
+
     // Modules de configuration
     DatabaseModule,
     RedisModule,
-    
+
     // Modules métier
     UserModule,
     AuthModule,
@@ -49,4 +49,4 @@ import { AppService } from './app.service';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {} 
+export class AppModule {}

@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../config/prisma.service';
@@ -10,6 +14,10 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { UserResponseDto } from '../user/dto/user-response.dto';
 import { JwtPayload } from './types/jwt-payload.type';
+import { RegisterWithOtpDto } from './dto/register-with-otp.dto';
+import { LoginWithOtpDto } from './dto/login-with-otp.dto';
+import { OtpService } from './services/otp.service';
+import { OtpType } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -20,6 +28,7 @@ export class AuthService {
     private prisma: PrismaService,
     private redis: RedisService,
     private userService: UserService,
+    private otpService: OtpService,
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<AuthResponseDto> {
@@ -72,7 +81,9 @@ export class AuthService {
     };
   }
 
-  async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<AuthResponseDto> {
+  async refreshToken(
+    refreshTokenDto: RefreshTokenDto,
+  ): Promise<AuthResponseDto> {
     try {
       // Vérifier le refresh token
       const payload = this.jwtService.verify(refreshTokenDto.refreshToken, {
@@ -130,7 +141,7 @@ export class AuthService {
   async validateUser(identifier: string, password: string): Promise<any> {
     const user = await this.findUserByIdentifier(identifier);
 
-    if (user && await bcrypt.compare(password, user.motDePasse)) {
+    if (user && (await bcrypt.compare(password, user.motDePasse))) {
       return user;
     }
 
@@ -140,7 +151,7 @@ export class AuthService {
   private async findUserByIdentifier(identifier: string): Promise<any> {
     // Vérifier si c'est un email ou un numéro de téléphone
     const isEmail = identifier.includes('@');
-    
+
     if (isEmail) {
       return await this.prisma.user.findUnique({
         where: { email: identifier },
@@ -152,7 +163,7 @@ export class AuthService {
     }
   }
 
-    private async generateTokens(user: any) {
+  private async generateTokens(user: any) {
     // Créer un payload riche avec toutes les informations utilisateur (sauf l'ID)
     const payload: JwtPayload = {
       email: user.email,
@@ -166,9 +177,9 @@ export class AuthService {
       isActive: user.isActive,
       isVerified: user.isVerified,
       createdAt: user.createdAt,
-      updatedAt: user.updatedAt
+      updatedAt: user.updatedAt,
     };
-    
+
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.configService.get('JWT_SECRET'),
@@ -183,15 +194,20 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      expiresIn: this.getTokenExpirationInSeconds(this.configService.get('JWT_EXPIRES_IN', '7d')),
+      expiresIn: this.getTokenExpirationInSeconds(
+        this.configService.get('JWT_EXPIRES_IN', '7d'),
+      ),
     };
   }
 
-  private async storeRefreshToken(userId: string, refreshToken: string): Promise<void> {
+  private async storeRefreshToken(
+    userId: string,
+    refreshToken: string,
+  ): Promise<void> {
     const expiresIn = this.getTokenExpirationInSeconds(
-      this.configService.get('JWT_REFRESH_EXPIRES_IN', '30d')
+      this.configService.get('JWT_REFRESH_EXPIRES_IN', '30d'),
     );
-    
+
     await this.redis.set(`refresh_token:${userId}`, refreshToken, expiresIn);
   }
 
@@ -212,4 +228,152 @@ export class AuthService {
         return 7 * 24 * 60 * 60; // 7 jours par défaut
     }
   }
-} 
+
+  // ==================== MÉTHODES OTP ====================
+
+  async sendOtp(
+    email: string,
+    type: OtpType,
+  ): Promise<{ success: boolean; message: string }> {
+    return await this.otpService.generateAndSendOtp(email, type);
+  }
+
+
+  async resendOtp(
+    email: string,
+    type: OtpType,
+  ): Promise<{ success: boolean; message: string }> {
+    return await this.otpService.resendOtp(email, type);
+  }
+
+  async registerWithOtp(
+    registerWithOtpDto: RegisterWithOtpDto,
+  ): Promise<AuthResponseDto> {
+    const { otpCode, ...createUserDto } = registerWithOtpDto;
+
+    // Vérifier le code OTP
+    const otpVerification = await this.otpService.verifyOtp(
+      createUserDto.email,
+      otpCode,
+      OtpType.EMAIL_VERIFICATION,
+    );
+
+    if (!otpVerification.success) {
+      throw new UnauthorizedException('Code de vérification invalide');
+    }
+
+    // Créer l'utilisateur avec le statut vérifié
+    const userData = {
+      ...createUserDto,
+      isVerified: true, // L'utilisateur est automatiquement vérifié avec l'OTP
+    };
+
+    const user = await this.userService.create(userData);
+
+    // Générer les tokens
+    const tokens = await this.generateTokens(user);
+
+    return {
+      ...tokens,
+      user,
+    };
+  }
+
+  async loginWithOtp(
+    loginWithOtpDto: LoginWithOtpDto,
+  ): Promise<AuthResponseDto> {
+    const { email, otpCode } = loginWithOtpDto;
+
+    // Vérifier le code OTP
+    const otpVerification = await this.otpService.verifyOtp(
+      email,
+      otpCode,
+      OtpType.LOGIN_VERIFICATION,
+    );
+
+    if (!otpVerification.success) {
+      throw new UnauthorizedException('Code de connexion invalide');
+    }
+
+    // Trouver l'utilisateur
+    const user = await this.findUserByIdentifier(email);
+    if (!user) {
+      throw new UnauthorizedException('Utilisateur introuvable');
+    }
+
+    // Vérifier le statut du compte
+    if (!user.isActive) {
+      throw new UnauthorizedException('Compte désactivé');
+    }
+
+    // Générer les tokens
+    const tokens = await this.generateTokens(user);
+
+    // Stocker le refresh token dans Redis
+    await this.storeRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      ...tokens,
+      user: this.userService.mapToUserResponse(user),
+    };
+  }
+
+  async requestPasswordReset(
+    email: string,
+  ): Promise<{ success: boolean; message: string }> {
+    // Vérifier que l'utilisateur existe
+    const user = await this.findUserByIdentifier(email);
+    if (!user) {
+      // Pour des raisons de sécurité, on ne révèle pas si l'email existe ou non
+      return {
+        success: true,
+        message:
+          'Si cet email existe, vous recevrez un code de réinitialisation',
+      };
+    }
+
+    // Envoyer l'OTP de réinitialisation
+    return await this.otpService.generateAndSendOtp(
+      email,
+      OtpType.PASSWORD_RESET,
+    );
+  }
+
+  async resetPasswordWithOtp(
+    email: string,
+    otpCode: string,
+    newPassword: string,
+  ): Promise<{ success: boolean; message: string }> {
+    // Vérifier le code OTP
+    const otpVerification = await this.otpService.verifyOtp(
+      email,
+      otpCode,
+      OtpType.PASSWORD_RESET,
+    );
+
+    if (!otpVerification.success) {
+      throw new UnauthorizedException('Code de réinitialisation invalide');
+    }
+
+    // Trouver l'utilisateur
+    const user = await this.findUserByIdentifier(email);
+    if (!user) {
+      throw new UnauthorizedException('Utilisateur introuvable');
+    }
+
+    // Mettre à jour le mot de passe
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { motDePasse: hashedPassword },
+    });
+
+    // Invalider tous les refresh tokens existants pour forcer une nouvelle connexion
+    await this.redis.del(`refresh_token:${user.id}`);
+
+    return {
+      success: true,
+      message: 'Mot de passe réinitialisé avec succès',
+    };
+  }
+}
